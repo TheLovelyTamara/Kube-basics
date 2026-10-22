@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kubernetes Lab Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(23, 32, 54, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --primary: #38bdf8;
+      --primary-glow: rgba(56, 189, 248, 0.35);
+      --success: #34d399;
+      --error: #f87171;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: radial-gradient(circle at 15% 20%, #1e1b4b 0%, #0b0f19 50%, #030712 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 2rem 1.5rem;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--card-border);
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .title-area h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ffffff 0%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .title-area p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 0.25rem;
+    }
+
+    .pod-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: #7dd3fc;
+    }
+
+    .pod-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    /* Metrics Banner */
+    .metrics-banner {
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 12px;
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      backdrop-filter: blur(8px);
+    }
+
+    .metrics-link {
+      color: #a5b4fc;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.85rem;
+      background: rgba(99, 102, 241, 0.2);
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .metrics-link:hover {
+      background: rgba(99, 102, 241, 0.35);
+      color: #fff;
+    }
+
+    /* Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+      transition: transform 0.2s ease, border-color 0.2s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card:hover {
+      border-color: rgba(56, 189, 248, 0.25);
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .status-pill {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-pill.online {
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+    }
+
+    .status-pill.offline {
+      background: rgba(248, 113, 113, 0.15);
+      color: var(--error);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+    }
+
+    /* Forms */
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    input, textarea, button {
+      font-family: inherit;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(11, 15, 25, 0.7);
+      color: #fff;
+      padding: 0.65rem 0.9rem;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--primary);
+    }
+
+    button {
+      background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
+      color: #0b0f19;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      padding: 0.75rem 1rem;
+      transition: opacity 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      opacity: 0.92;
+      box-shadow: 0 4px 16px var(--primary-glow);
+    }
+
+    /* List items */
+    .item-list {
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .item {
+      background: rgba(11, 15, 25, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+
+    .item-title {
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    .item-sub {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin-top: 0.2rem;
+    }
+
+    .key-value {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      color: #38bdf8;
+      overflow-x: auto;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title-area">
+        <h1>Kubernetes Microservices Lab</h1>
+        <p>PostgreSQL • MinIO • HashiCorp Vault • LLDAP • Prometheus</p>
+      </div>
+      <div class="pod-badge">
+        <span class="pod-dot"></span> Served by Pod: <strong>{{ pod_name }}</strong>
+      </div>
+    </header>
+
+    <div class="metrics-banner">
+      <span>📊 <strong>Prometheus Metrics Live:</strong> Exposing cluster telemetry & application stats.</span>
+      <a href="/metrics" target="_blank" class="metrics-link">Inspect /metrics ↗</a>
+    </div>
+
+    <div class="grid">
+      <!-- 1. PostgreSQL -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>🐘 PostgreSQL (Relational DB)</span>
+          </div>
+          <span class="status-pill {{ 'online' if pg.ok else 'offline' }}">{{ 'ONLINE' if pg.ok else 'ERROR' }}</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">{{ pg.msg }}</p>
+        
+        <form action="/postgres/add" method="POST">
+          <input type="text" name="title" placeholder="Note Title (e.g. Sprint Goals)" required>
+          <textarea name="content" rows="2" placeholder="Note details saved durably to PVC..." required></textarea>
+          <button type="submit">Save Record to Database</button>
+        </form>
+
+        <div class="item-list">
+          {% for note in pg.notes %}
+          <div class="item">
+            <div class="item-title">{{ note.title }}</div>
+            <div class="item-sub">{{ note.content }} • <em style="font-size:0.75rem;">{{ note.date }}</em></div>
+          </div>
+          {% else %}
+          <div class="item" style="color: var(--text-muted);">No records in database yet. Add one above!</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- 2. MinIO -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>🪣 MinIO (S3 Blob Storage)</span>
+          </div>
+          <span class="status-pill {{ 'online' if s3.ok else 'offline' }}">{{ 'ONLINE' if s3.ok else 'ERROR' }}</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">{{ s3.msg }}</p>
+
+        <form action="/minio/upload" method="POST" enctype="multipart/form-data">
+          <input type="file" name="file" required>
+          <button type="submit">Upload Object to S3 Bucket</button>
+        </form>
+
+        <div class="item-list">
+          {% for f in s3.files %}
+          <div class="item">
+            <div class="item-title">📄 {{ f }}</div>
+          </div>
+          {% else %}
+          <div class="item" style="color: var(--text-muted);">Bucket is currently empty. Upload a file!</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- 3. HashiCorp Vault -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>🔐 HashiCorp Vault (Secrets Engine)</span>
+          </div>
+          <span class="status-pill {{ 'online' if vault.ok else 'offline' }}">{{ 'ONLINE' if vault.ok else 'ERROR' }}</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">{{ vault.msg }}</p>
+
+        <p style="margin-top: 1rem; font-size: 0.85rem; font-weight: 500;">Decrypted Secrets (Path: <code>secret/data/app</code>):</p>
+        <div class="key-value">
+          {% for k, v in vault.data.items() %}
+          <div><strong>{{ k }}:</strong> {{ v }}</div>
+          {% else %}
+          <div>No secrets found in path.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- 4. LDAP Authentication -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>👥 LLDAP (Identity & Directory)</span>
+          </div>
+          <span class="status-pill {{ 'online' if ldap.ok else 'offline' }}">{{ 'ONLINE' if ldap.ok else 'ERROR' }}</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">{{ ldap.msg }}</p>
+
+        <form id="ldapForm" onsubmit="handleLdapAuth(event)">
+          <input type="text" id="ldapUser" placeholder="LDAP Username (e.g. admin)" value="admin" required>
+          <input type="password" id="ldapPass" placeholder="LDAP Password" value="LdapAdminPassword123!" required>
+          <button type="submit">Verify Credentials via LDAP Bind</button>
+        </form>
+        <div id="ldapResult" style="margin-top: 0.75rem; font-size: 0.85rem; min-height: 1.5rem;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function handleLdapAuth(e) {
+      e.preventDefault();
+      const resDiv = document.getElementById('ldapResult');
+      resDiv.innerHTML = '<span style="color: #94a3b8;">Authenticating against LDAP cluster service...</span>';
+      
+      const formData = new FormData();
+      formData.append('username', document.getElementById('ldapUser').value);
+      formData.append('password', document.getElementById('ldapPass').value);
+
+      try {
+        const resp = await fetch('/ldap/auth', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+          resDiv.innerHTML = `<span style="color: var(--success); font-weight: 600;">✓ ${data.message}</span>`;
+        } else {
+          resDiv.innerHTML = `<span style="color: var(--error); font-weight: 600;">✗ ${data.message}</span>`;
+        }
+      } catch (err) {
+        resDiv.innerHTML = `<span style="color: var(--error);">Error connecting to auth endpoint: ${err.message}</span>`;
+      }
+    }
+  </script>
+</body>
+</html>

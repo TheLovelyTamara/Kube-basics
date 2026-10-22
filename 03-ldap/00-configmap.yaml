@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ldap-config
+  namespace: lab
+data:
+  LLDAP_LDAP_BASE_DN: "dc=example,dc=com"
+  LLDAP_HTTP_PORT: "17170"
+  LLDAP_LDAP_PORT: "3890"
+  LLDAP_VERBOSE: "false"

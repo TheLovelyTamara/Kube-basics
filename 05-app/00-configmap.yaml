@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: lab
+data:
+  POSTGRES_HOST: "postgres-service"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "appdb"
+  MINIO_ENDPOINT: "http://minio-service:9000"
+  MINIO_BUCKET: "lab-bucket"
+  VAULT_ADDR: "http://vault-service:8200"
+  VAULT_TOKEN: "root"
+  LDAP_SERVER: "ldap-service"
+  LDAP_PORT: "3890"
+  LDAP_BASE_DN: "dc=example,dc=com"

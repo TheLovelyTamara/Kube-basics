@@ -1,0 +1,523 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: static-web-content
+  namespace: lab
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Static Web + Backend API Architecture</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+      <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+      <div class="glow-bg"></div>
+      <div class="container">
+        <header>
+          <div class="brand">
+            <div class="logo-icon">🌐</div>
+            <div>
+              <h1>Decoupled Web Architecture</h1>
+              <p class="subtitle">Static Frontend (Nginx) ⟷ Reverse Proxy ⟷ Backend REST API (Python)</p>
+            </div>
+          </div>
+          <div class="badges">
+            <div class="badge badge-static">
+              <span class="dot dot-blue"></span> Static Server: Nginx:alpine
+            </div>
+            <div class="badge badge-api" id="apiBadge">
+              <span class="dot dot-green"></span> Backend API: Connecting...
+            </div>
+          </div>
+        </header>
+
+        <!-- Architecture Flow Diagram Card -->
+        <div class="card arch-card">
+          <div class="card-title">📐 How This Traffic Flows in Kubernetes</div>
+          <div class="flow-container">
+            <div class="flow-step">
+              <div class="step-num">1</div>
+              <div class="step-label">Your Browser</div>
+              <div class="step-desc">Loads static HTML/JS/CSS from Nginx</div>
+            </div>
+            <div class="flow-arrow">⟶</div>
+            <div class="flow-step">
+              <div class="step-num">2</div>
+              <div class="step-label">Frontend (Nginx)</div>
+              <div class="step-desc">Port 80 • ClusterIP: <code>frontend-web-service</code></div>
+            </div>
+            <div class="flow-arrow">⟶</div>
+            <div class="flow-step">
+              <div class="step-num">3</div>
+              <div class="step-label">Reverse Proxy</div>
+              <div class="step-desc">Passes <code>/api/*</code> across cluster DNS</div>
+            </div>
+            <div class="flow-arrow">⟶</div>
+            <div class="flow-step">
+              <div class="step-num">4</div>
+              <div class="step-label">Backend API</div>
+              <div class="step-desc">Port 5000 • <code>backend-api-service</code></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <!-- Backend System Telemetry -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">⚡ Live Backend Telemetry</div>
+              <span class="status-indicator live" id="liveIndicator">POLLING /api/system</span>
+            </div>
+            <div class="stats-grid">
+              <div class="stat-box">
+                <div class="stat-label">API Pod Hostname</div>
+                <div class="stat-value" id="apiPod">-</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-label">Python Version</div>
+                <div class="stat-value" id="pyVersion">-</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-label">CPU Cores Detected</div>
+                <div class="stat-value" id="cpuCount">-</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-label">API Uptime</div>
+                <div class="stat-value" id="apiUptime">-</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interactive API Data Store -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📦 Dynamic API Resource Management</div>
+              <button class="btn-refresh" onclick="fetchItems()">↻ Refresh</button>
+            </div>
+            <p class="card-desc">The JavaScript below sends asynchronous <code>fetch('/api/items')</code> requests.</p>
+            
+            <form id="itemForm" onsubmit="createItem(event)">
+              <div class="input-group">
+                <input type="text" id="itemName" placeholder="Item name (e.g. Cluster Ingress Controller)" required>
+                <input type="text" id="itemCategory" placeholder="Category (e.g. Networking)" required>
+                <button type="submit" class="btn-submit">+ Add via POST</button>
+              </div>
+            </form>
+
+            <div class="items-list" id="itemsList">
+              <div class="empty-state">Loading items from backend API...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <script src="app.js"></script>
+    </body>
+    </html>
+
+  style.css: |
+    :root {
+      --bg: #07090e;
+      --card-bg: rgba(18, 24, 38, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --primary: #38bdf8;
+      --accent: #818cf8;
+      --success: #34d399;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2.5rem 1.5rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .glow-bg {
+      position: absolute;
+      top: -10%;
+      left: 20%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, rgba(129, 140, 248, 0.06) 40%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-icon {
+      font-size: 2.5rem;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 16px;
+      padding: 0.5rem 0.8rem;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff 0%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+
+    .badges {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.9rem;
+      border-radius: 9999px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+    }
+
+    .badge-static {
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      color: #7dd3fc;
+    }
+
+    .badge-api {
+      background: rgba(52, 211, 153, 0.08);
+      border: 1px solid rgba(52, 211, 153, 0.25);
+      color: #6ee7b7;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+    .dot-blue { background: #38bdf8; box-shadow: 0 0 6px #38bdf8; }
+    .dot-green { background: #34d399; box-shadow: 0 0 6px #34d399; }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 1.6rem;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      margin-bottom: 1.5rem;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    .card-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 1.25rem;
+    }
+
+    /* Flow diagram */
+    .flow-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-top: 1.25rem;
+      overflow-x: auto;
+      padding: 0.5rem 0;
+    }
+
+    .flow-step {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+      flex: 1;
+      min-width: 170px;
+    }
+
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--primary);
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.4rem;
+    }
+
+    .step-label {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .step-desc {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 0.3rem;
+    }
+
+    .flow-arrow {
+      color: var(--muted);
+      font-size: 1.4rem;
+      font-weight: 300;
+    }
+
+    /* Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+      gap: 1.5rem;
+    }
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .stat-box {
+      background: rgba(11, 15, 25, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin-top: 0.4rem;
+      word-break: break-all;
+    }
+
+    .status-indicator {
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+    }
+
+    /* Forms */
+    .input-group {
+      display: flex;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    input {
+      flex: 1;
+      min-width: 150px;
+      background: rgba(11, 15, 25, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #fff;
+      padding: 0.65rem 0.9rem;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus { border-color: var(--primary); }
+
+    .btn-submit {
+      background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
+      color: #060b14;
+      font-weight: 600;
+      border: none;
+      padding: 0.65rem 1.2rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-submit:hover { opacity: 0.9; }
+
+    .btn-refresh {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--muted);
+      padding: 0.3rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .btn-refresh:hover { color: #fff; border-color: #fff; }
+
+    /* Items List */
+    .items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 250px;
+      overflow-y: auto;
+    }
+
+    .item-card {
+      background: rgba(11, 15, 25, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: transform 0.15s ease;
+    }
+    .item-card:hover { transform: translateX(3px); }
+
+    .item-name { font-weight: 600; font-size: 0.9rem; }
+    .item-cat {
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      background: rgba(129, 140, 248, 0.15);
+      color: #a5b4fc;
+      border: 1px solid rgba(129, 140, 248, 0.25);
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      padding: 1.5rem;
+    }
+
+  app.js: |
+    async function updateSystemInfo() {
+      try {
+        const resp = await fetch('/api/system');
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+
+        document.getElementById('apiPod').innerText = data.pod_name;
+        document.getElementById('pyVersion').innerText = data.python_version;
+        document.getElementById('cpuCount').innerText = `${data.cpu_count} Core(s)`;
+        document.getElementById('apiUptime').innerText = `${Math.floor(data.uptime_seconds)}s`;
+        
+        const badge = document.getElementById('apiBadge');
+        badge.innerHTML = `<span class="dot dot-green"></span> Backend API: ${data.pod_name}`;
+      } catch (err) {
+        document.getElementById('apiPod').innerText = 'Error';
+        const badge = document.getElementById('apiBadge');
+        badge.innerHTML = `<span class="dot" style="background:#f87171;"></span> API Offline: ${err.message}`;
+      }
+    }
+
+    async function fetchItems() {
+      const listDiv = document.getElementById('itemsList');
+      try {
+        const resp = await fetch('/api/items');
+        const items = await resp.json();
+        
+        if (items.length === 0) {
+          listDiv.innerHTML = '<div class="empty-state">No items created yet. Add one above!</div>';
+          return;
+        }
+
+        listDiv.innerHTML = items.map(it => `
+          <div class="item-card">
+            <span class="item-name">${it.name}</span>
+            <span class="item-cat">${it.category}</span>
+          </div>
+        `).join('');
+      } catch (err) {
+        listDiv.innerHTML = `<div class="empty-state" style="color:#f87171;">Failed to fetch items: ${err.message}</div>`;
+      }
+    }
+
+    async function createItem(e) {
+      e.preventDefault();
+      const name = document.getElementById('itemName').value;
+      const category = document.getElementById('itemCategory').value;
+
+      try {
+        const resp = await fetch('/api/items', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, category })
+        });
+        if (resp.ok) {
+          document.getElementById('itemName').value = '';
+          document.getElementById('itemCategory').value = '';
+          fetchItems();
+        }
+      } catch (err) {
+        alert('Failed to save item: ' + err.message);
+      }
+    }
+
+    // Initial load
+    updateSystemInfo();
+    fetchItems();
+    // Poll telemetry every 3 seconds to see load balancing across backend pods!
+    setInterval(updateSystemInfo, 3000);

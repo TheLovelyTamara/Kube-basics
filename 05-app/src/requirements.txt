@@ -1,0 +1,9 @@
+fastapi==0.110.0
+uvicorn==0.28.0
+psycopg2-binary==2.9.9
+boto3==1.34.69
+ldap3==2.9.1
+requests==2.31.0
+prometheus-client==0.20.0
+python-multipart==0.0.9
+jinja2==3.1.3

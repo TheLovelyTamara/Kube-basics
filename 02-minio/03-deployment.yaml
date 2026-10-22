@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio-deployment
+  namespace: lab
+  labels:
+    app: minio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+      - name: minio
+        image: alpine/minio:latest-release
+        args:
+        - "server"
+        - "/data"
+        - "--console-address"
+        - ":9001"
+        ports:
+        - containerPort: 9000
+          name: s3-api
+        - containerPort: 9001
+          name: console
+        envFrom:
+        - configMapRef:
+            name: minio-config
+        - secretRef:
+            name: minio-secret
+        volumeMounts:
+        - name: minio-storage
+          mountPath: /data
+        # HTTP Probes: Kubernetes pings an HTTP endpoint on the container
+        livenessProbe:
+          httpGet:
+            path: /minio/health/live
+            port: 9000
+          initialDelaySeconds: 15
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /minio/health/ready
+            port: 9000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: minio-storage
+        persistentVolumeClaim:
+          claimName: minio-pvc
