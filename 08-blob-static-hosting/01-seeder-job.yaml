@@ -1,0 +1,82 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: minio-static-seeder-job
+  namespace: lab
+spec:
+  # The Job controller runs this Pod until it completes successfully, then stops.
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: minio-seeder
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: seeder
+        image: localhost/demo-app:v1
+        command:
+        - "python"
+        - "-c"
+        - |
+          import boto3, json, mimetypes, os
+          from botocore.client import Config
+
+          print("Connecting to MinIO to seed static assets...")
+          s3 = boto3.client(
+              's3',
+              endpoint_url='http://minio-service:9000',
+              aws_access_key_id='minioadmin',
+              aws_secret_access_key='MinioAdminPassword123!',
+              config=Config(signature_version='s3v4'),
+              region_name='us-east-1'
+          )
+
+          bucket = 'web-bucket'
+          try:
+              s3.create_bucket(Bucket=bucket)
+              print(f"Created bucket {bucket}")
+          except Exception as e:
+              print(f"Bucket exists or ready: {e}")
+
+          # Set Public Read Policy so files can be fetched over HTTP
+          policy = {
+              "Version": "2012-10-17",
+              "Statement": [{
+                  "Sid": "PublicReadGetObject",
+                  "Effect": "Allow",
+                  "Principal": "*",
+                  "Action": ["s3:GetObject"],
+                  "Resource": [f"arn:aws:s3:::{bucket}/*"]
+              }]
+          }
+          s3.put_bucket_policy(Bucket=bucket, Policy=json.dumps(policy))
+          print("Bucket policy set to Public Read.")
+
+          # Upload static files
+          files = {
+              "index.html": "text/html",
+              "style.css": "text/css",
+              "app.js": "application/javascript"
+          }
+
+          for fname, ctype in files.items():
+              path = os.path.join('/site', fname)
+              if os.path.exists(path):
+                  with open(path, 'rb') as f:
+                      content = f.read()
+                      s3.put_object(
+                          Bucket=bucket,
+                          Key=fname,
+                          Body=content,
+                          ContentType=ctype
+                      )
+                      print(f"Uploaded s3://{bucket}/{fname} ({len(content)} bytes) as {ctype}")
+          print("All static assets seeded successfully into Blob Storage!")
+        volumeMounts:
+        - name: site-files
+          mountPath: /site
+      volumes:
+      - name: site-files
+        configMap:
+          name: blob-site-source

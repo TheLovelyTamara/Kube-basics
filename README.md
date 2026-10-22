@@ -60,6 +60,8 @@ Welcome to the **Kubernetes Basics Lab**! This repository is an end-to-end, hand
   - Metrics collection, PromQL, Grafana dashboards, Helm charts in practice.
 - [x] **Phase 7: Static Web & Backend API Architecture** → [`07-static-web-and-api/README.md`](07-static-web-and-api/README.md)
   - Decoupled SPAs, Nginx reverse proxy, CORS elimination, independent scaling.
+- [x] **Phase 8: S3 / Blob Storage Static Web Hosting** → [`08-blob-static-hosting/README.md`](08-blob-static-hosting/README.md)
+  - S3 static buckets, Kubernetes Jobs, CloudFront-style edge gateway proxying.
 
 ---
 

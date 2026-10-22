@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cdn-gateway-config
+  namespace: lab
+data:
+  default.conf: |
+    server {
+        listen 80;
+        listen [::]:80;
+        server_name localhost;
+
+        # 1. Reverse Proxy static traffic directly to the MinIO S3 Object Storage bucket!
+        location / {
+            # Rewrite root request to index.html in the S3 bucket
+            rewrite ^/$ /web-bucket/index.html break;
+            rewrite ^/(.*)$ /web-bucket/$1 break;
+
+            proxy_pass http://minio-service.lab.svc.cluster.local:9000;
+            proxy_set_header Host minio-service.lab.svc.cluster.local:9000;
+            
+            # Hide internal S3 headers from the browser
+            proxy_hide_header x-amz-request-id;
+            proxy_hide_header x-minio-deployment-id;
+        }
+
+        # 2. Reverse Proxy API requests to the backend microservice
+        location /api/ {
+            proxy_pass http://backend-api-service.lab.svc.cluster.local:5000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+    }
