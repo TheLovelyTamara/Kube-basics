@@ -77,11 +77,15 @@ kubectl apply -f 07-static-web-and-api/
 ```
 
 ### Open the Application
-Forward the frontend web service to port 8080 on your host:
+Forward the frontend web service to port **8088** on your host:
 ```bash
-kubectl port-forward -n lab svc/frontend-web-service 8080:80
+kubectl port-forward -n lab svc/frontend-web-service 8088:80
 ```
-Open **http://localhost:8080** in your browser:
+
+> [!NOTE]
+> We use port **8088** (instead of 8080) because port 8080 is reserved on `0.0.0.0` by our `kind` cluster's host container mapping. Using 8088 avoids IPv4 port conflicts on your machine!
+
+Open **http://localhost:8088** in your browser:
 1. Observe the architecture diagram and live telemetry banner.
 2. Watch the **API Pod Hostname** cycle between your backend replicas as it polls `/api/system` every 3 seconds.
 3. Add a new item through the form to test asynchronous `POST` requests travelling through the Nginx reverse proxy to the backend API!
